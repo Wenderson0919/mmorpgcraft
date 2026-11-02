@@ -1,26 +1,36 @@
-AVENTURIA ONLINE — ATUALIZAÇÃO DE MUNDO COMPARTILHADO E CHAT
+AVENTURIA ONLINE — SERVIDOR GLOBAL (UM MUNDO SÓ)
 
-Arquivos:
-- aventuria_mmorpg_v5.html: cliente do jogo
-- server.js: servidor Node.js
+Todo mundo que abrir o mesmo endereço entra no mesmo mapa, vê os outros
+jogadores, conversa no chat e luta as mesmas raids.
 
-COMO INICIAR
-1. Instale Node.js 18 ou superior.
-2. Deixe os dois arquivos na mesma pasta.
-3. Abra um terminal nessa pasta e execute: node server.js
-4. No próprio computador, abra http://localhost:3000.
-5. Para amigos entrarem de outros locais, hospede esse servidor em um serviço público com suporte a WebSocket e use o endereço HTTPS/WSS fornecido pela hospedagem.
+------------------------------------------------
+JOGAR NESTE COMPUTADOR
+1. Instale Node.js 18 ou mais novo: https://nodejs.org
+2. Nesta pasta, execute:  node server.js
+3. Abra http://localhost:3000
+4. NÃO abra o HTML direto (file://) — isso não conecta.
 
-MUNDO COMPARTILHADO
-- O servidor define o ponto de nascimento de cada personagem na praça central.
-- Todos os clientes conectados ao mesmo endereço e processo de servidor entram no mesmo mundo/instância.
-- Os personagens próximos são sincronizados pelo servidor.
-- O servidor transmite mensagens do chat para todos os jogadores conectados.
+JOGAR NA MESMA CASA / WI-FI
+- No terminal aparece um endereço tipo http://192.168.x.x:3000
+- Celulares e PCs da mesma rede usam ESSE link.
+- Se não abrir, libere a porta 3000 no firewall do Windows.
 
-CHAT
-- Clique no botão 💬 Chat para abrir o painel.
-- Digite a mensagem e clique em Enviar ou pressione Enter.
-- Feche o painel no botão X.
+JOGAR PELA INTERNET (amigos em qualquer lugar)
+Publique ESTE servidor uma única vez. Enquanto o processo estiver no ar,
+existe só um mundo.
+
+Opção rápida (Render, grátis):
+1. Suba esta pasta para um repositório Git.
+2. Em https://render.com crie um Web Service a partir do repo.
+3. Build: npm install    Start: node server.js
+4. Compartilhe o link HTTPS que o Render gerar (exemplo: https://aventuria-online.onrender.com)
+
+Railway, Fly.io ou qualquer VPS também servem. O jogo e o WebSocket
+usam o MESMO endereço — não precisa de porta extra.
 
 IMPORTANTE
-Abrir o HTML diretamente pelo arquivo (file://) não conecta ao mundo online. Todos precisam acessar o mesmo endereço do servidor. Se forem iniciados dois processos de servidor separados, serão mundos separados. A sincronização foi validada por inspeção e testes locais básicos; faça um teste com dois navegadores/dispositivos no mesmo servidor hospedado para confirmar rede externa.
+- Um processo = um mundo. Dois "node server.js" = dois mundos separados.
+- O plano grátis do Render dorme após inatividade; o primeiro acesso
+  pode demorar ~1 minuto para acordar.
+- Chat: botão 💬. PvP: botão 🗡 (os dois precisam estar com PvP ligado
+  e fora da Área Safe).

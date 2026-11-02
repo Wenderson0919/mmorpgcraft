@@ -2,7 +2,7 @@
 /* =====================================================================
    AVENTURIA — SERVIDOR GLOBAL
    Sem dependências: só precisa do Node 18+.   Uso:  node server.js
-   - Serve o jogo (aventuria_mmorpg_v5.html) em http://HOST:PORT/
+   - Serve o jogo (index.html) em http://HOST:PORT/
    - WebSocket em ws://HOST:PORT/ (mesmo endereço)
    - Todos os jogadores caem no MESMO mapa (semente fixa)
    - Raids: o servidor controla chefes/lacaios; todos lutam juntos
@@ -13,9 +13,11 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const os = require('os');
 
 /* ------------------------- CONFIG ------------------------- */
 const PORT = +process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
 const SEED = +process.env.SEED || 20260101;          // tem que ser a mesma do cliente (o servidor manda no welcome)
 const MAX_PLAYERS = +process.env.MAX_PLAYERS || 100;
 const STRUCT_TTL = (+process.env.STRUCT_TTL_SEC || 600) * 1000; // construções duram 10 min
@@ -23,7 +25,7 @@ const MAX_STRUCT_PER_PLAYER = 40;
 const MAX_STRUCT_TOTAL = 3000;
 const TICK = 50;                                     // 20 Hz
 const AOI = 2600;                                    // raio de interesse (px) para enviar jogadores/chefes
-const CLIENT_FILE = path.join(__dirname, 'aventuria_mmorpg_v5.html');
+const CLIENT_FILES = ['index.html', 'aventuria_mmorpg_v5.html'].map(f => path.join(__dirname, f));
 
 /* ------------------------- MUNDO (idêntico ao cliente) ------------------------- */
 const TILE = 32, MT = 125, MAP = TILE * MT, CX = MAP / 2;
@@ -164,9 +166,11 @@ function attachWS(sock, onMessage, onClose) {
 const server = http.createServer((req, res) => {
   const url = (req.url || '/').split('?')[0];
   if (url === '/health') { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true, players: players.size, raids: raids.length, structs: structs.size })); return; }
-  if (url === '/' || url === '/index.html') {
-    fs.readFile(CLIENT_FILE, (err, data) => {
-      if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('Coloque aventuria_mmorpg_v5.html na mesma pasta do server.js'); return; }
+  if (url === '/' || url === '/index.html' || url === '/jogo') {
+    const file = CLIENT_FILES.find(f => fs.existsSync(f));
+    if (!file) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('Coloque index.html na mesma pasta do server.js'); return; }
+    fs.readFile(file, (err, data) => {
+      if (err) { res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('Erro ao ler o jogo.'); return; }
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' }); res.end(data);
     });
     return;
@@ -552,10 +556,23 @@ setInterval(() => {
   }
 }, TICK);
 
-server.listen(PORT, () => {
+function lanIPs() {
+  const out = [];
+  for (const list of Object.values(os.networkInterfaces())) {
+    for (const n of list || []) {
+      const v4 = n.family === 'IPv4' || n.family === 4;
+      if (v4 && !n.internal) out.push(n.address);
+    }
+  }
+  return out;
+}
+server.listen(PORT, HOST, () => {
   console.log('==============================================');
-  console.log(' AVENTURIA — servidor global rodando');
-  console.log(` http://localhost:${PORT}   (WebSocket no mesmo endereço)`);
+  console.log(' AVENTURIA — servidor global (um mundo só)');
+  console.log(` Neste PC:     http://localhost:${PORT}`);
+  for (const ip of lanIPs()) console.log(` Na sua rede:  http://${ip}:${PORT}`);
+  console.log(' Internet: publique este mesmo processo (Render/Railway/Fly)');
+  console.log(' e mande o link HTTPS para todo mundo. WebSocket no mesmo endereço.');
   console.log(` Semente do mundo: ${SEED} | Construções duram ${STRUCT_TTL / 1000}s`);
   console.log('==============================================');
   for (const [tier, b] of [[0, 'forest'], [1, 'forest'], [0, null], [2, null], [1, null]]) spawnRaid(tier, b);

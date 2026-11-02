@@ -1,0 +1,13 @@
+{
+  "name": "aventuria-online",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Aventuria — um servidor global, um mundo compartilhado",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

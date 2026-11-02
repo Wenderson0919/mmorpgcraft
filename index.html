@@ -157,6 +157,8 @@ input,textarea,select,[contenteditable="true"]{user-select:text;-webkit-user-sel
   <canvas id="minimap" width="160" height="160" style="width:160px;height:160px;border-radius:10px"></canvas>
 </div>
 
+<div id="online-hud" class="absolute top-3 left-1/2 -translate-x-1/2 z-30 glass-panel px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wide" style="color:#7dd3fc;white-space:nowrap">Servidor global · aguardando herói...</div>
+
 <!-- CHAT -->
 <button id="chat-toggle" onclick="toggleChatPanel()" aria-label="Abrir chat" class="fixed bottom-5 left-5 z-[76] glass-panel rounded-full px-4 py-3 text-sm font-black" style="color:#f8df9a">💬 Chat</button>
 <div id="chat-box" class="fixed bottom-20 left-5 z-[76] glass-panel p-3 rounded-2xl flex flex-col gap-2" style="display:none;width:min(340px,calc(100vw - 24px));max-height:min(48vh,360px)">
@@ -221,7 +223,7 @@ input,textarea,select,[contenteditable="true"]{user-select:text;-webkit-user-sel
 <!-- CHARACTER CREATION -->
 <div id="create-modal" class="absolute inset-0 z-[100] flex items-center justify-center p-3" style="background:radial-gradient(circle at 50% 20%,#1d3a33,#0a1418 70%)">
   <div class="glass-panel w-full max-w-4xl max-h-[96vh] overflow-y-auto rounded-3xl p-5 sm:p-7">
-    <div class="text-center mb-4"><div class="text-3xl font-black text-amber-300 tracking-widest">AVENTURIA</div><div class="text-xs text-slate-400">Crie seu herói e parta para a aventura</div></div>
+    <div class="text-center mb-4"><div class="text-3xl font-black text-amber-300 tracking-widest">AVENTURIA</div><div class="text-xs text-slate-400">Crie seu herói e entre no servidor global — todo mundo no mesmo mapa</div></div>
     <div id="continue-box" class="hidden mb-4 p-3 rounded-xl border border-emerald-500/40 bg-emerald-950/30 flex items-center justify-between gap-3 text-xs"><span id="continue-text"></span><button class="btn" onclick="continueGame()">Continuar</button></div>
     <div class="grid md:grid-cols-[220px_1fr] gap-5">
       <div class="flex flex-col items-center gap-2">
@@ -443,6 +445,7 @@ function newState(){return{
 window.MMO={localState:newState()};
 const S=()=>window.MMO.localState;
 const SAVE_KEY='aventuria-save-v2';
+const WORLD_SEED=20260101;
 
 function getRPGStats(){
  const s=S();const st={atk:0,def:0,power:0,hp:0,crit:0,steal:0,speed:0};
@@ -1342,14 +1345,14 @@ function applyStart(){
  return s;
 }
 function beginNewGame(){
- window.MMO.localState=applyStart();const seed=Math.floor(Math.random()*1e9);
- $('create-modal').classList.add('hidden');window.game.start(seed);updateUIStats();
+ window.MMO.localState=applyStart();
+ $('create-modal').classList.add('hidden');window.game.start(WORLD_SEED);updateUIStats();
 }
 function continueGame(){
  const sv=loadSave();if(!sv)return;
  const base=newState();window.MMO.localState=Object.assign(base,sv);const s=S();
  s.skills=Object.assign(base.skills,sv.skills||{});s.buffs=Object.assign({dmg:0,guard:0},sv.buffs||{});s.visited=sv.visited||{};
- $('create-modal').classList.add('hidden');window.game.start(sv.seed||1,sv);s.hp=Math.min(s.hp||effMaxHp(),effMaxHp());updateUIStats();
+ $('create-modal').classList.add('hidden');window.game.start(WORLD_SEED,sv);s.hp=Math.min(s.hp||effMaxHp(),effMaxHp());updateUIStats();
 }
 window.addEventListener('load',()=>{
  new Game();randomizeCreation();
@@ -1516,18 +1519,29 @@ place();upd();
  const S=()=>window.MMO.localState, $=id=>document.getElementById(id);
  const send=o=>{if(state.ws&&state.ws.readyState===1)state.ws.send(JSON.stringify(o))};
  const safeItems=()=>({inventory:(S().inventory||[]).slice(0,60),equipment:S().equipment||{}});
+ function setHud(t,ok){const e=$('online-hud');if(!e)return;e.textContent=t;e.style.color=ok?'#86efac':'#7dd3fc'}
+ function wsUrl(){
+  if(window.AVENTURIA_WS)return window.AVENTURIA_WS;
+  try{const q=new URLSearchParams(location.search).get('ws');if(q)return q}catch(e){}
+  if(location.protocol==='file:'||!location.host)return '';
+  return (location.protocol==='https:'?'wss:':'ws:')+'//'+location.host+'/';
+ }
  function connect(){
-  const proto=location.protocol==='https:'?'wss:':'ws:';
-  const ws=new WebSocket(proto+'//'+location.host+'/');state.ws=ws;
+  if(state.ws&&(state.ws.readyState===0||state.ws.readyState===1))return;
+  if(!window.game?.running){setHud('Servidor global · entre com seu herói');setTimeout(connect,400);return}
+  const url=wsUrl();
+  if(!url){setHud('Abra pelo servidor (http://…), não pelo arquivo');return}
+  setHud('Conectando ao mundo global...');
+  const ws=new WebSocket(url);state.ws=ws;
   ws.onopen=()=>{const s=S(),g=window.game;send({t:'join',name:s.name,cls:s.className,race:s.race,hair:s.hairColor,eye:s.eyeColor,lvl:s.level,x:g?.player?.x,y:g?.player?.y,inventory:s.inventory,equipment:s.equipment});};
   ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}handle(m)};
-  ws.onclose=()=>{state.ready=false;setTimeout(connect,3000)};
+  ws.onclose=()=>{state.ready=false;state.ws=null;setHud('Reconectando ao mundo global...');setTimeout(connect,2500)};
   ws.onerror=()=>{};
  }
  function handle(m){
-  if(m.t==='welcome'){state.id=m.id;state.ready=true;state.raids=m.raids||[];window.AVENTURIA_ONLINE={id:m.id,online:true};if(window.game?.player&&Number.isFinite(m.x)&&Number.isFinite(m.y)){window.game.player.x=m.x;window.game.player.y=m.y;S().x=m.x;S().y=m.y;}updateOnlineRaidPanel();toast('Conectado ao mundo online!');}
+  if(m.t==='welcome'){state.id=m.id;state.ready=true;state.raids=m.raids||[];window.AVENTURIA_ONLINE={id:m.id,online:true,count:1};if(window.game){if(m.seed&&window.game.seed!==m.seed)window.game.start(m.seed);if(window.game.player&&Number.isFinite(m.x)&&Number.isFinite(m.y)){window.game.player.x=m.x;window.game.player.y=m.y;S().x=m.x;S().y=m.y;}}setHud('Mundo global · 1 jogador',true);updateOnlineRaidPanel();toast('Você entrou no servidor global!');}
   else if(m.t==='raids'){state.raids=m.raids||[];updateOnlineRaidPanel();}
-  else if(m.t==='snap'){state.players.clear();for(const a of m.p||[])state.players.set(a[0],{id:a[0],name:a[1],cls:a[2],race:a[3],hair:a[4],eye:a[5],x:a[6],y:a[7],dir:a[8],moving:!!a[9],lvl:a[10],hp:a[11],mh:a[12],pvp:!!a[13],online:true});state.bosses.clear();for(const a of m.b||[])state.bosses.set(a[0],{id:a[0],name:'Chefe da Raid',x:a[1],y:a[2],hp:a[3],maxHp:a[4],face:a[5],onlineRaidBoss:true,sz:34,def:{sz:34}});state.minions.clear();for(const a of m.m||[])state.minions.set(a[0],{id:a[0],kind:a[1],x:a[2],y:a[3],hp:a[4],maxHp:a[5],onlineMinion:true,sz:18,def:{sz:18}});window.AVENTURIA_ONLINE.count=m.n;}
+  else if(m.t==='snap'){state.players.clear();for(const a of m.p||[])state.players.set(a[0],{id:a[0],name:a[1],cls:a[2],race:a[3],hair:a[4],eye:a[5],x:a[6],y:a[7],dir:a[8],moving:!!a[9],lvl:a[10],hp:a[11],mh:a[12],pvp:!!a[13],online:true});state.bosses.clear();for(const a of m.b||[])state.bosses.set(a[0],{id:a[0],name:'Chefe da Raid',x:a[1],y:a[2],hp:a[3],maxHp:a[4],face:a[5],onlineRaidBoss:true,sz:34,def:{sz:34}});state.minions.clear();for(const a of m.m||[])state.minions.set(a[0],{id:a[0],kind:a[1],x:a[2],y:a[3],hp:a[4],maxHp:a[5],onlineMinion:true,sz:18,def:{sz:18}});window.AVENTURIA_ONLINE.count=m.n;const n=m.n||(state.players.size+1);setHud('Mundo global · '+n+' jogador'+(n===1?'':'es'),true);}
   else if(m.t==='roster'){window.AVENTURIA_ONLINE=window.AVENTURIA_ONLINE||{};window.AVENTURIA_ONLINE.roster=m.roster||[];}
   else if(m.t==='hurt'){const s=S();s.hp=Math.max(0,s.hp-(m.raw||0));if(typeof updateUIStats==='function')updateUIStats();toast('Você foi atingido por '+(m.src||'outro jogador')+'!');if(s.hp<=0)send({t:'died',by:m.from});}
   else if(m.t==='fix'){if(window.game?.player){window.game.player.x=m.x;window.game.player.y=m.y}}
