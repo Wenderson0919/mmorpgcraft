@@ -210,12 +210,14 @@ function joinPlayer(conn, m) {
     lvl: Math.max(1, Math.min(60, num(m.lvl, 1) | 0)), inventory: Array.isArray(m.inventory) ? m.inventory.slice(0,60) : [], equipment: m.equipment && typeof m.equipment==='object' ? m.equipment : {}, trade: null, x: SAFE.x, y: SAFE.y + 110, dir: 'down', mv: 0, hp: 100, mh: 100, pvp: false, at: 0, aa: 0, tr: 0,
     hitTokens: 12, hitT: now(), lastChat: 0, lastBuild: 0, structCount: 0, lastHitBy: new Map(), lastKill: new Map(), seen: now(), kills: 0
   };
-  const sx = num(m.x, null), sy = num(m.y, null);
-  if (sx != null && sy != null) { p.x = Math.max(30, Math.min(MAP - 30, sx)); p.y = Math.max(30, Math.min(MAP - 30, sy)); }
+  // Spawn authoritative: todos entram no mesmo mundo e no mesmo hub inicial.
+  // Distribui em pequenos pontos ao redor da praça para não sobrepor sprites.
+  const slot = id - 1, col = (slot % 5) - 2, row = Math.floor(slot / 5) % 5 - 2;
+  p.x = SAFE.x + col * 46; p.y = SAFE.y + row * 46;
   conn.player = p; conn.id = id; players.set(id, p);
   const t = now();
   send(p, {
-    t: 'welcome', id, seed: SEED, ttl: STRUCT_TTL,
+    t: 'welcome', id, x: p.x, y: p.y, seed: SEED, ttl: STRUCT_TTL,
     structs: [...structs.values()].map(s => structOut(s, t)),
     raids: raids.map(raidOut),
     roster: roster()

@@ -1,0 +1,26 @@
+AVENTURIA ONLINE — ATUALIZAÇÃO DE MUNDO COMPARTILHADO E CHAT
+
+Arquivos:
+- aventuria_mmorpg_v5.html: cliente do jogo
+- server.js: servidor Node.js
+
+COMO INICIAR
+1. Instale Node.js 18 ou superior.
+2. Deixe os dois arquivos na mesma pasta.
+3. Abra um terminal nessa pasta e execute: node server.js
+4. No próprio computador, abra http://localhost:3000.
+5. Para amigos entrarem de outros locais, hospede esse servidor em um serviço público com suporte a WebSocket e use o endereço HTTPS/WSS fornecido pela hospedagem.
+
+MUNDO COMPARTILHADO
+- O servidor define o ponto de nascimento de cada personagem na praça central.
+- Todos os clientes conectados ao mesmo endereço e processo de servidor entram no mesmo mundo/instância.
+- Os personagens próximos são sincronizados pelo servidor.
+- O servidor transmite mensagens do chat para todos os jogadores conectados.
+
+CHAT
+- Clique no botão 💬 Chat para abrir o painel.
+- Digite a mensagem e clique em Enviar ou pressione Enter.
+- Feche o painel no botão X.
+
+IMPORTANTE
+Abrir o HTML diretamente pelo arquivo (file://) não conecta ao mundo online. Todos precisam acessar o mesmo endereço do servidor. Se forem iniciados dois processos de servidor separados, serão mundos separados. A sincronização foi validada por inspeção e testes locais básicos; faça um teste com dois navegadores/dispositivos no mesmo servidor hospedado para confirmar rede externa.

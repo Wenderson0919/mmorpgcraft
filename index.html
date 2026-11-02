@@ -50,7 +50,7 @@ input,textarea,select,[contenteditable="true"]{user-select:text;-webkit-user-sel
   body>div.absolute.bottom-4.right-4{display:block!important;right:6px!important;bottom:calc(env(safe-area-inset-bottom) + 6px)!important;z-index:24;opacity:.82}
   #minimap{width:clamp(86px,17vw,122px)!important;height:clamp(86px,17vw,122px)!important}
   /* chat stays above touch controls and remains editable */
-  body>#chat-box{position:fixed!important;left:8px!important;bottom:calc(env(safe-area-inset-bottom) + 8px)!important;width:min(38vw,300px)!important;max-width:38vw!important;padding:5px!important;gap:5px!important;z-index:75!important;pointer-events:auto!important}
+  body>#chat-box{left:8px!important;bottom:calc(env(safe-area-inset-bottom) + 58px)!important;width:min(340px,calc(100vw - 16px))!important;max-width:calc(100vw - 16px)!important;z-index:76!important;pointer-events:auto!important}
   #chat-input{padding:9px 8px!important;font-size:16px!important;min-height:40px!important}
   body>#chat-box button{min-width:38px;min-height:40px}
   /* hotbar is a compact horizontally scrollable strip */
@@ -158,9 +158,11 @@ input,textarea,select,[contenteditable="true"]{user-select:text;-webkit-user-sel
 </div>
 
 <!-- CHAT -->
-<div id="chat-box" class="absolute bottom-4 left-4 z-20 glass-panel p-2 rounded-2xl flex items-center gap-2 max-w-xs w-full">
-  <input id="chat-input" type="text" enterkeyhint="send" autocomplete="off" autocapitalize="sentences" placeholder="Enter para conversar..." class="bg-slate-900/80 border border-slate-700/80 text-white text-xs rounded-xl px-3 py-2 w-full focus:outline-none focus:border-amber-400 placeholder-slate-500">
-  <button onclick="sendChatMessage()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs"><i class="fa-solid fa-paper-plane"></i></button>
+<button id="chat-toggle" onclick="toggleChatPanel()" aria-label="Abrir chat" class="fixed bottom-5 left-5 z-[76] glass-panel rounded-full px-4 py-3 text-sm font-black" style="color:#f8df9a">💬 Chat</button>
+<div id="chat-box" class="fixed bottom-20 left-5 z-[76] glass-panel p-3 rounded-2xl flex flex-col gap-2" style="display:none;width:min(340px,calc(100vw - 24px));max-height:min(48vh,360px)">
+  <div class="flex items-center justify-between"><b class="text-amber-200 text-sm">Chat do mundo</b><button onclick="toggleChatPanel(false)" class="btn-sm">✕</button></div>
+  <div id="chat-log" class="overflow-y-auto text-xs space-y-1 p-2 rounded-lg bg-slate-950/60" style="min-height:90px;max-height:220px;user-select:text"></div>
+  <div class="flex gap-2"><input id="chat-input" type="text" enterkeyhint="send" autocomplete="off" autocapitalize="sentences" placeholder="Digite sua mensagem..." class="bg-slate-900/80 border border-slate-700/80 text-white text-sm rounded-xl px-3 py-2 flex-1 min-w-0" style="font-size:16px!important;user-select:text;-webkit-user-select:text"><button onclick="sendChatMessage()" class="bg-amber-500 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs">Enviar</button></div>
 </div>
 
 <!-- HOTBAR -->
@@ -564,7 +566,9 @@ function renderChestSlots(){
   d.onclick=()=>{S().resources[k]=(S().resources[k]||0)+ch[k];ch[k]=0;updateUIStats();renderChestSlots()};
   d.innerHTML=`<span>${RES[k].h}</span><span class="text-[10px] text-amber-300">${RES[k].n}</span><span class="text-emerald-400 font-extrabold">x${q}</span>`;c.appendChild(d)});
 }
-function sendChatMessage(){const i=$('chat-input');if(!i.value.trim())return;const s=S();s.chatBubble=i.value.trim();s.chatBubbleTimer=4;i.value='';i.blur()}
+function toggleChatPanel(force){const box=$('chat-box'),open=force===undefined?box.style.display==='none':!!force;box.style.display=open?'flex':'none';if(open)setTimeout(()=>$('chat-input')?.focus(),80)}
+function addChatLine(name,msg){const log=$('chat-log');if(!log)return;const row=document.createElement('div');const b=document.createElement('b');b.style.color='#f5d58b';b.textContent=name+': ';row.append(b,document.createTextNode(msg));log.appendChild(row);while(log.children.length>60)log.firstChild.remove();log.scrollTop=log.scrollHeight}
+function sendChatMessage(){const i=$('chat-input'),msg=i.value.trim();if(!msg)return;const s=S();s.chatBubble=msg;s.chatBubbleTimer=4;if(window.avOnlineChat)window.avOnlineChat(msg);else addChatLine(s.name||'Você',msg);i.value='';i.focus()}
 
 function updateUIStats(){
  const s=S(),st=getRPGStats(),mh=effMaxHp();
@@ -1076,7 +1080,7 @@ class Game{
    if(['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName))return;
    if(!this.running)return;
    if(e.key==='Escape'){['craft-modal','shop-modal','chest-modal','rpg-modal'].forEach(i=>$(i).classList.add('hidden'));return}
-   if(e.key==='Enter'){$('chat-input').focus();e.preventDefault();return}
+   if(e.key==='Enter'){toggleChatPanel(true);e.preventDefault();return}
    if(e.code==='KeyB')toggleBuildMode();
    if(e.code==='KeyR'){S().buildRotation=(S().buildRotation+90)%360;showNotification('Rotação: '+S().buildRotation+'°')}
    if(e.code==='KeyE')this.interact();
@@ -1521,7 +1525,7 @@ place();upd();
   ws.onerror=()=>{};
  }
  function handle(m){
-  if(m.t==='welcome'){state.id=m.id;state.ready=true;state.raids=m.raids||[];window.AVENTURIA_ONLINE={id:m.id,online:true};updateOnlineRaidPanel();toast('Conectado ao mundo online!');}
+  if(m.t==='welcome'){state.id=m.id;state.ready=true;state.raids=m.raids||[];window.AVENTURIA_ONLINE={id:m.id,online:true};if(window.game?.player&&Number.isFinite(m.x)&&Number.isFinite(m.y)){window.game.player.x=m.x;window.game.player.y=m.y;S().x=m.x;S().y=m.y;}updateOnlineRaidPanel();toast('Conectado ao mundo online!');}
   else if(m.t==='raids'){state.raids=m.raids||[];updateOnlineRaidPanel();}
   else if(m.t==='snap'){state.players.clear();for(const a of m.p||[])state.players.set(a[0],{id:a[0],name:a[1],cls:a[2],race:a[3],hair:a[4],eye:a[5],x:a[6],y:a[7],dir:a[8],moving:!!a[9],lvl:a[10],hp:a[11],mh:a[12],pvp:!!a[13],online:true});state.bosses.clear();for(const a of m.b||[])state.bosses.set(a[0],{id:a[0],name:'Chefe da Raid',x:a[1],y:a[2],hp:a[3],maxHp:a[4],face:a[5],onlineRaidBoss:true,sz:34,def:{sz:34}});state.minions.clear();for(const a of m.m||[])state.minions.set(a[0],{id:a[0],kind:a[1],x:a[2],y:a[3],hp:a[4],maxHp:a[5],onlineMinion:true,sz:18,def:{sz:18}});window.AVENTURIA_ONLINE.count=m.n;}
   else if(m.t==='roster'){window.AVENTURIA_ONLINE=window.AVENTURIA_ONLINE||{};window.AVENTURIA_ONLINE.roster=m.roster||[];}
@@ -1531,6 +1535,7 @@ place();upd();
   else if(m.t==='trade_done'){if(m.inventory){S().inventory=m.inventory;saveGame(false);renderRPGPanel();updateUIStats()}toast('Troca concluída pelo servidor!');state.tradeOffer=null;renderTrade();}
   else if(m.t==='trade_error')toast(m.message||'Troca não foi concluída.');
   else if(m.t==='sys')toast(m.m||'');
+  else if(m.t==='chat'){addChatLine(m.n||'Jogador',m.m||'');const q=state.players.get(m.id);if(q){q.chatBubble=m.m;q.chatBubbleTimer=4;}if(m.id===state.id){const s=S();s.chatBubble=m.m;s.chatBubbleTimer=4;}}
  }
  function updateOnlineRaidPanel(){
   const el=$('raid-panel'),g=window.game;if(!el||!g?.player)return;
@@ -1543,6 +1548,7 @@ place();upd();
  }
  function toast(t){if(typeof showNotification==='function')showNotification(t,'#7dd3fc');}
  function renderTrade(){const e=$('tr-status');if(!e)return;if(!state.ready){e.textContent='Conectando ao servidor...';return}e.textContent=state.tradePeer?'Negociação online conectada.':'Selecione um jogador próximo:';let box=$('av-online-trade');if(!box){box=document.createElement('div');box.id='av-online-trade';box.className='mt-2 p-2 rounded-lg bg-slate-900/80';e.parentNode.appendChild(box)}const nearby=[...state.players.values()].filter(p=>Math.hypot(p.x-(window.game?.player?.x||0),p.y-(window.game?.player?.y||0))<180);box.innerHTML=nearby.map(p=>`<button class="btn-sm mr-1 mb-1" data-peer="${p.id}">🤝 ${String(p.name).replace(/[<>]/g,'')} (Nv ${p.lvl})</button>`).join('')||'<span class="text-xs text-slate-400">Nenhum jogador online por perto.</span>';box.querySelectorAll('[data-peer]').forEach(b=>b.onclick=()=>window.avOnlineTrade(b.dataset.peer));if(state.tradePeer){box.innerHTML+='<div class="mt-2 text-xs">Escolha um item na sua bolsa e clique em Oferecer. Depois, ambos devem aceitar.</div>';const items=S().inventory||[];box.innerHTML+=items.map(i=>`<button class="btn-sm mr-1 mb-1" data-item="${String(i.id).replace(/["&<>]/g,'')}">Oferecer: ${String(i.name).replace(/[<>]/g,'')}</button>`).join('');box.innerHTML+='<button id="av-tr-accept" class="btn-sm ml-1">Aceitar troca</button><button id="av-tr-cancel" class="btn-sm ml-1">Cancelar</button>';box.querySelectorAll('[data-item]').forEach(b=>b.onclick=()=>window.avOnlineOffer(b.dataset.item));$('av-tr-accept').onclick=window.avOnlineAccept;$('av-tr-cancel').onclick=window.avOnlineCancel;}}
+ window.avOnlineChat=msg=>{if(state.ready)send({t:'chat',m:String(msg).slice(0,120)});else addChatLine('Sistema','Conectando ao servidor...');};
  window.avOnlineTrade=peer=>{if(!state.ready)return toast('Conecte-se ao servidor primeiro.');send({t:'trade_invite',peer:+peer})};
  window.avOnlineOffer=id=>{send({t:'trade_offer',itemId:String(id)})};
  window.avOnlineAccept=()=>send({t:'trade_accept'});
@@ -1550,7 +1556,7 @@ place();upd();
  // Posição e estado enviados em intervalo fixo; servidor controla PvP e valida distância.
  setInterval(()=>{const g=window.game,s=S();if(!state.ready||!g?.running)return;const t=performance.now();if(t-state.lastSend<50)return;state.lastSend=t;if(Math.floor(t/500)!==Math.floor((t-50)/500))updateOnlineRaidPanel();send({t:'p',x:g.player.x,y:g.player.y,d:g.player.dir||'down',m:!!g.player.moving,hp:s.hp,mh:effMaxHp(),lvl:s.level,pv:!!pvp});},50);
  // Desenha jogadores remotos sobre o canvas do jogo.
- function drawRemote(){const g=window.game;if(g?.running&&g.ctx){const c=g.ctx,W=g.canvas.width,H=g.canvas.height;c.save();c.translate(-Math.round(g.player.x-W/2),-Math.round(g.player.y-H/2));for(const p of state.players.values()){if(typeof drawCharacter==='function')drawCharacter(c,p.x,p.y,{dir:p.dir,name:p.name,title:p.pvp?'PvP':'Online',cls:p.cls,race:p.race,hair:p.hair,eye:p.eye,moving:p.moving});c.fillStyle='#fff';c.font='11px sans-serif';c.textAlign='center';c.fillText(p.name+' · Nv '+p.lvl,p.x,p.y-30);if(p.pvp){c.fillStyle='#ef4444';c.fillRect(p.x-17,p.y-25,34,3)}}for(const r of state.raids){if(r.state==='cleared')continue;c.strokeStyle=r.state==='active'?'#ef4444':'#f59e0b';c.lineWidth=3;c.beginPath();c.arc(r.x,r.y,r.r,0,Math.PI*2);c.stroke();c.fillStyle='#f59e0b';c.font='bold 12px sans-serif';c.textAlign='center';c.fillText('RAID '+(r.tierName||['COMUM','INCOMUM','RARA','ÉPICA','LENDÁRIA'][r.tier]||'')+' · '+r.name,r.x,r.y-r.r-12)}for(const b of state.bosses.values()){c.fillStyle='#7f1d1d';c.beginPath();c.arc(b.x,b.y,30,0,Math.PI*2);c.fill();c.strokeStyle='#fecaca';c.lineWidth=3;c.stroke();c.fillStyle='#ef4444';c.fillRect(b.x-25,b.y-42,50*Math.max(0,b.hp/b.maxHp),5);c.fillStyle='#fff';c.font='12px sans-serif';c.textAlign='center';c.fillText(b.name,b.x,b.y-50)}for(const m of state.minions.values()){c.fillStyle='#a16207';c.beginPath();c.arc(m.x,m.y,12,0,Math.PI*2);c.fill()}c.restore()}requestAnimationFrame(drawRemote)}requestAnimationFrame(drawRemote);
+ function drawRemote(){const g=window.game;if(g?.running&&g.ctx){const c=g.ctx,W=g.canvas.width,H=g.canvas.height;c.save();c.translate(-Math.round(g.player.x-W/2),-Math.round(g.player.y-H/2));for(const p of state.players.values()){if(typeof drawCharacter==='function')drawCharacter(c,p.x,p.y,{dir:p.dir,name:p.name,title:p.pvp?'PvP':'Online',cls:p.cls,race:p.race,hair:p.hair,eye:p.eye,moving:p.moving,bubble:p.chatBubble});if(p.chatBubbleTimer>0)p.chatBubbleTimer-=.05;c.fillStyle='#fff';c.font='11px sans-serif';c.textAlign='center';c.fillText(p.name+' · Nv '+p.lvl,p.x,p.y-30);if(p.pvp){c.fillStyle='#ef4444';c.fillRect(p.x-17,p.y-25,34,3)}}for(const r of state.raids){if(r.state==='cleared')continue;c.strokeStyle=r.state==='active'?'#ef4444':'#f59e0b';c.lineWidth=3;c.beginPath();c.arc(r.x,r.y,r.r,0,Math.PI*2);c.stroke();c.fillStyle='#f59e0b';c.font='bold 12px sans-serif';c.textAlign='center';c.fillText('RAID '+(r.tierName||['COMUM','INCOMUM','RARA','ÉPICA','LENDÁRIA'][r.tier]||'')+' · '+r.name,r.x,r.y-r.r-12)}for(const b of state.bosses.values()){c.fillStyle='#7f1d1d';c.beginPath();c.arc(b.x,b.y,30,0,Math.PI*2);c.fill();c.strokeStyle='#fecaca';c.lineWidth=3;c.stroke();c.fillStyle='#ef4444';c.fillRect(b.x-25,b.y-42,50*Math.max(0,b.hp/b.maxHp),5);c.fillStyle='#fff';c.font='12px sans-serif';c.textAlign='center';c.fillText(b.name,b.x,b.y-50)}for(const m of state.minions.values()){c.fillStyle='#a16207';c.beginPath();c.arc(m.x,m.y,12,0,Math.PI*2);c.fill()}c.restore()}requestAnimationFrame(drawRemote)}requestAnimationFrame(drawRemote);
  // PvP: golpes locais em personagens online são enviados ao servidor, nunca resolvidos localmente.
  const gameProto=Game?.prototype;
  if(gameProto&&gameProto.damageTarget){const original=gameProto.damageTarget;gameProto.damageTarget=function(t,dmg,ang,noKb){if(t?.online&&t.id){send({t:'hit',k:'p',id:t.id,d:dmg});return}if(t?.onlineRaidBoss){send({t:'hit',k:'b',id:t.id,d:dmg});return}if(t?.onlineMinion){send({t:'hit',k:'m',id:t.id,d:dmg});return}return original.call(this,t,dmg,ang,noKb)}}
