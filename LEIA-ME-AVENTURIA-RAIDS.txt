@@ -1,0 +1,19 @@
+AVENTURIA ONLINE — RAIDS SOLO E ALEATÓRIAS
+
+Arquivos: aventuria_mmorpg_v5.html e server.js
+
+O que mudou:
+- Raids surgem em posições aleatórias válidas do mapa e em biomas diferentes.
+- Cinco raids iniciais são sorteadas; depois novas raids surgem em intervalos de 75 segundos, respeitando o limite de raids ativas.
+- Raridades: Comum, Incomum, Rara, Épica e Lendária, com probabilidades ponderadas.
+- É possível iniciar e concluir uma raid sozinho: chefe com 70% da vida-base e quantidade reduzida de lacaios.
+- Em grupo, o chefe escala a vida conforme o número de participantes.
+- O painel mostra raridade, nome, nível recomendado, distância e direção.
+
+Instalação:
+1. Instale Node.js 18+.
+2. Coloque os dois arquivos na mesma pasta.
+3. Execute `node server.js`.
+4. Abra `http://localhost:3000`.
+
+Para jogar com outras pessoas pela internet, hospede o servidor em uma máquina pública com suporte a WebSocket e configure HTTPS/WSS. O teste de sintaxe não substitui um teste multiplayer real.
