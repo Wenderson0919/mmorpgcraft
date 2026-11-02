@@ -1,0 +1,18 @@
+AVENTURIA — VERSÃO COM AJUSTES PARA CELULAR
+
+1. Extraia o ZIP inteiro para uma pasta.
+2. Mantenha aventuria_mmorpg_v5.html e server.js na mesma pasta.
+3. Instale Node.js 18 ou superior.
+4. Abra o terminal nessa pasta e execute: node server.js
+5. No celular, abra o endereço do servidor na rede local ou o endereço HTTPS/WSS da hospedagem.
+
+AJUSTES:
+- HUD e painéis compactados em telas touch.
+- Barra de atalhos menor e com rolagem horizontal.
+- Minimapa reduzido.
+- Chat reposicionado e com campo de texto selecionável, teclado virtual habilitado e tamanho de fonte adequado para celular.
+- Botões touch menores e adaptados a retrato/paisagem.
+
+DICA: no celular, use o modo paisagem para ter mais espaço de jogo. O chat fica na parte inferior e pode ser tocado diretamente para abrir o teclado.
+
+OBSERVAÇÃO: estes ajustes corrigem o layout e a interação de toque. A digitação no chat e o multiplayer ainda dependem de o jogo estar aberto pelo servidor corretamente configurado.

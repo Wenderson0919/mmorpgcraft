@@ -115,7 +115,7 @@ const minions = new Map();      // id -> minion
 const projs = [];               // projéteis inimigos
 const hazards = [];             // áreas de ataque pendentes
 let nextRaidId = 1, nextMinionId = 1, nextStructId = 1;
-let spawnTimer = 12;
+let spawnTimer = 0;
 
 /* ------------------------- WEBSOCKET (implementação mínima) ------------------------- */
 const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
@@ -323,7 +323,7 @@ function handleDied(p, m) {
 
 /* ------------------------- RAIDS ------------------------- */
 function raidOut(r) {
-  return { id: r.id, tier: r.tier, tierName: TIERS[r.tier].n, req: TIERS[r.tier].req, biome: r.biome, x: r.x, y: r.y, r: r.r, state: r.state, name: r.boss.name, sz: r.boss.sz, hp: r.boss.hp, mh: r.boss.maxHp, participants: r.groupAtStart || 0 };
+  return { id: r.id, tier: r.tier, biome: r.biome, x: r.x, y: r.y, r: r.r, state: r.state, name: r.boss.name, sz: r.boss.sz, hp: r.boss.hp, mh: r.boss.maxHp };
 }
 function spawnRaid(forceTier, forceBiome) {
   const act = raids.filter(r => r.state !== 'cleared');
@@ -351,13 +351,10 @@ function spawnRaid(forceTier, forceBiome) {
 function playersIn(r, extra) { const out = []; for (const p of players.values()) if (p.hp > 0 && !inSafe(p) && Math.hypot(p.x - r.x, p.y - r.y) <= r.r + (extra || 0)) out.push(p); return out; }
 function activateRaid(r, group) {
   r.state = 'active'; const T = TIERS[r.tier], n = Math.max(1, group.length);
-  // Modo solo é suportado: chefe com 70% da vida-base e menos lacaios.
-  // Em grupo, a vida cresce 55% por participante além do segundo.
-  const mult = n === 1 ? 0.70 : 1 + .55 * (n - 2);
-  r.boss.maxHp = Math.max(1, Math.round(r.boss.maxHp * mult)); r.boss.hp = r.boss.maxHp; r.groupAtStart = n;
+  // escala de grupo: +55% de vida por jogador extra
+  const mult = 1 + .55 * (n - 1); r.boss.maxHp = Math.round(r.boss.maxHp * mult); r.boss.hp = r.boss.maxHp; r.groupAtStart = n;
   r.dmgBy = new Map();
-  const minionCount = n === 1 ? Math.max(2, Math.ceil(T.minions * .6)) : T.minions + (n - 2);
-  for (let i = 0; i < minionCount; i++) spawnMinion(r);
+  for (let i = 0; i < T.minions + (n - 1); i++) spawnMinion(r);
   broadcast({ t: 'raids', raids: raids.map(raidOut) });
   toNear(r.x, r.y, { t: 'rstart', id: r.id, name: r.boss.name, tier: r.tier, req: T.req }, r.r + 1500);
 }
@@ -528,7 +525,7 @@ setInterval(() => {
   if (tickN % 20 === 0) for (const s of [...structs.values()]) if (t >= s.expires) removeStruct(s, false);
   // raids: spawn, update, limpeza
   spawnTimer -= dt;
-  if (spawnTimer <= 0) { spawnTimer = 75; if (raids.filter(r => r.state !== 'cleared').length < MAX_ACTIVE_RAIDS) spawnRaid(); }
+  if (spawnTimer <= 0) { spawnTimer = 30; if (raids.filter(r => r.state !== 'cleared').length < MAX_ACTIVE_RAIDS) spawnRaid(); }
   for (const r of raids) updateRaid(r, dt);
   updateMinions(dt); updateHazardsProjs(dt);
   for (let i = raids.length - 1; i >= 0; i--) {
@@ -559,6 +556,6 @@ server.listen(PORT, () => {
   console.log(` http://localhost:${PORT}   (WebSocket no mesmo endereço)`);
   console.log(` Semente do mundo: ${SEED} | Construções duram ${STRUCT_TTL / 1000}s`);
   console.log('==============================================');
-  for (let i = 0; i < 5; i++) spawnRaid();
+  for (const [tier, b] of [[0, 'forest'], [1, 'forest'], [0, null], [2, null], [1, null]]) spawnRaid(tier, b);
 });
 process.on('uncaughtException', e => console.error('Erro:', e));

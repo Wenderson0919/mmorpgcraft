@@ -33,6 +33,53 @@ canvas#game-canvas{display:block;width:100%;height:100%;image-rendering:pixelate
 .swatch{width:26px;height:26px;border-radius:8px;border:2px solid #0006;cursor:pointer}.swatch.on{outline:2px solid #f4c66a}
 #boss-bar{transition:opacity .25s}
 kbd{background:#172b2b;border:1px solid #776b4d;color:#f3d58c;border-radius:4px;padding:1px 5px}
+
+#chat-box{pointer-events:auto}
+/* AVENTURIA RESPONSIVE PATCH: telas touch e celulares */
+input,textarea,select,[contenteditable="true"]{user-select:text;-webkit-user-select:text;touch-action:pan-y;pointer-events:auto}
+#chat-input{min-width:0;min-height:42px;font-size:16px!important;line-height:1.25;position:relative;z-index:70;touch-action:manipulation;-webkit-user-select:text;user-select:text}
+@media (pointer:coarse), (max-width:700px){
+  html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
+  #game-canvas{width:100vw;height:100dvh}
+  /* compact status panel */
+  body>div.absolute.top-4.left-4{top:calc(env(safe-area-inset-top) + 6px)!important;left:6px!important;right:auto!important;max-width: min(48vw,270px);transform:scale(.78);transform-origin:top left;z-index:30}
+  body>div.absolute.top-4.left-4 .glass-panel{padding:8px!important;border-radius:12px!important}
+  body>div.absolute.top-4.left-4 .w-72{width:min(270px,48vw)!important}
+  body>div.absolute.top-4.left-4 #res-grid{max-height:70px!important}
+  body>div.absolute.top-4.right-4{display:none!important}
+  body>div.absolute.bottom-4.right-4{display:block!important;right:6px!important;bottom:calc(env(safe-area-inset-bottom) + 6px)!important;z-index:24;opacity:.82}
+  #minimap{width:clamp(86px,17vw,122px)!important;height:clamp(86px,17vw,122px)!important}
+  /* chat stays above touch controls and remains editable */
+  body>#chat-box{position:fixed!important;left:8px!important;bottom:calc(env(safe-area-inset-bottom) + 8px)!important;width:min(38vw,300px)!important;max-width:38vw!important;padding:5px!important;gap:5px!important;z-index:75!important;pointer-events:auto!important}
+  #chat-input{padding:9px 8px!important;font-size:16px!important;min-height:40px!important}
+  body>#chat-box button{min-width:38px;min-height:40px}
+  /* hotbar is a compact horizontally scrollable strip */
+  body>div.absolute.bottom-4.left-1\/2{position:fixed!important;left:50%!important;bottom:calc(env(safe-area-inset-bottom) + 7px)!important;transform:translateX(-50%)!important;margin-left:0!important;width:auto!important;max-width:58vw!important;overflow-x:auto!important;overflow-y:hidden!important;gap:4px!important;padding:5px!important;z-index:35!important;scrollbar-width:none}
+  body>div.absolute.bottom-4.left-1\/2::-webkit-scrollbar{display:none}
+  body>div.absolute.bottom-4.left-1\/2>button{font-size:0!important;padding:5px!important;min-width:34px!important;min-height:38px!important;justify-content:center}
+  body>div.absolute.bottom-4.left-1\/2>button i{font-size:16px!important}
+  #hotbar-container{gap:3px!important;flex-wrap:nowrap!important}
+  #hotbar-container button{width:36px!important;height:38px!important;min-width:36px!important;font-size:12px!important}
+  #hotbar-container .cnt{font-size:8px!important}
+  #av-bar{top:calc(env(safe-area-inset-top) + 5px)!important;right:6px!important;max-width:49vw!important;gap:3px!important;z-index:80!important}
+  #av-bar button{width:30px!important;height:30px!important;font-size:13px!important}
+  #mc{z-index:42!important}
+  .mcb{width:46px!important;height:46px!important;font-size:18px!important}
+  #mj{width:92px!important;height:92px!important}
+  #me{top:42px!important;max-width:96vw;flex-wrap:wrap;font-size:11px!important}
+  #notification-toast{top:42px!important;max-width:70vw!important;z-index:90!important}
+  #boss-bar{top:42px!important;width:62vw!important}
+  /* modal content fits small viewports */
+  .max-h-\\[88vh\\]{max-height:82dvh!important}
+}
+@media (pointer:coarse) and (orientation:portrait){
+  body>#chat-box{width:calc(100vw - 16px)!important;max-width:calc(100vw - 16px)!important;bottom:calc(env(safe-area-inset-bottom) + 6px)!important}
+  body>div.absolute.bottom-4.left-1\/2{bottom:calc(env(safe-area-inset-bottom) + 58px)!important;max-width:calc(100vw - 16px)!important}
+  body>div.absolute.bottom-4.right-4{bottom:calc(env(safe-area-inset-bottom) + 108px)!important}
+  body>div.absolute.top-4.left-4{transform:scale(.68)!important;max-width:55vw!important}
+  #mj{width:82px!important;height:82px!important}
+}
+
 </style>
 </head>
 <body>
@@ -111,8 +158,8 @@ kbd{background:#172b2b;border:1px solid #776b4d;color:#f3d58c;border-radius:4px;
 </div>
 
 <!-- CHAT -->
-<div class="absolute bottom-4 left-4 z-20 glass-panel p-2 rounded-2xl flex items-center gap-2 max-w-xs w-full">
-  <input id="chat-input" type="text" placeholder="Enter para conversar..." class="bg-slate-900/80 border border-slate-700/80 text-white text-xs rounded-xl px-3 py-2 w-full focus:outline-none focus:border-amber-400 placeholder-slate-500">
+<div id="chat-box" class="absolute bottom-4 left-4 z-20 glass-panel p-2 rounded-2xl flex items-center gap-2 max-w-xs w-full">
+  <input id="chat-input" type="text" enterkeyhint="send" autocomplete="off" autocapitalize="sentences" placeholder="Enter para conversar..." class="bg-slate-900/80 border border-slate-700/80 text-white text-xs rounded-xl px-3 py-2 w-full focus:outline-none focus:border-amber-400 placeholder-slate-500">
   <button onclick="sendChatMessage()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs"><i class="fa-solid fa-paper-plane"></i></button>
 </div>
 
